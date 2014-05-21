@@ -104,7 +104,7 @@ int main (int argc, char *argv[])
                 for (int j = 0; j < 5; j++)
                     camera_getframe ();
                 cleanup_maze ();
-                generate_maze (8, 8, &maze);
+                generate_maze (maze_side, maze_side, &maze);
                 memset (&trace, 0, sizeof(trace));
             }
             process_done = false;
