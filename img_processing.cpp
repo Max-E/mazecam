@@ -106,12 +106,13 @@ void do_process (Mat process_in)
 
     // Find the writing in the image. TODO: more efficient method.
     #define GETELEMENT(sz) getStructuringElement(2, Size( 2*sz + 1, 2*sz+1 ), Point( sz, sz ) )
-    Mat dst;
+    Mat dst, downsized;
+    resize (process_in, downsized, Size (base_w/2, base_h/2));
     PmorphologyEx (process_in, dst, MORPH_BLACKHAT, GETELEMENT(15));
     threshold (dst, dst, 5, 0, 3);
     equalizeHist (dst, dst);
     threshold (dst, dst, 16, 255, 0);
-    dst.copyTo (writing_emphasized);
+    resize (dst, writing_emphasized, Size (base_w, base_h));
     
     /// Find contours
     findContours (writing_emphasized, contours_unfiltered, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point (0, 0));
