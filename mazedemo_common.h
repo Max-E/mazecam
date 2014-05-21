@@ -66,6 +66,7 @@ typedef struct
 } mazepublic_t;
 
 void generate_maze (int width, int height, mazepublic_t *out);
+void cleanup_maze (void);
 bool maze_trace (int num_arrows, arrow_t *arrows, mazepublic_t *out);
 
 #ifdef __cplusplus

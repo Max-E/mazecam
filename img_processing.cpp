@@ -65,8 +65,6 @@ static void draw_arrow (Mat &canvas, Scalar color, Point2f &org, Point2f &axis, 
     line (canvas, arrow_right, arrow_left, color, 2, CV_AA);
 }
 
-RNG rng(12345);
-
 /** @function do_process */
 void do_process (Mat process_in)
 {

@@ -103,6 +103,7 @@ int main (int argc, char *argv[])
                 // Flush a couple of frames that the webcam might have buffered
                 for (int j = 0; j < 5; j++)
                     camera_getframe ();
+                cleanup_maze ();
                 generate_maze (8, 8, &maze);
                 memset (&trace, 0, sizeof(trace));
             }

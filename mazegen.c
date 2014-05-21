@@ -22,6 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+// This is an implementation of the unmodified randomized Prim's algorithm from
+// http://en.wikipedia.org/wiki/Maze_generation_algorithm
+
 #include <stdbool.h>
 #include <stdio.h>
 #include <assert.h>
@@ -200,7 +203,7 @@ static void generate_maze_lines (const maze_t *maze, mazepublic_t *out)
     }
 }
 
-maze_t maze;
+static maze_t maze;
 
 void generate_maze (int width, int height, mazepublic_t *out)
 {
@@ -217,6 +220,18 @@ void generate_maze (int width, int height, mazepublic_t *out)
     }
 
     generate_maze_lines (&maze, out);
+}
+
+void cleanup_maze (void)
+{
+    if (maze.mark_cells)
+        free (maze.mark_cells);
+    if (maze.mark_passages)
+        free (maze.mark_passages);
+    if (maze.in_wall_list)
+        free (maze.in_wall_list);
+    if (maze.wall_list)
+        free (maze.wall_list);
 }
 
 // arrows must be of size num_arrows
