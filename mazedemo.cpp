@@ -9,32 +9,21 @@
 using namespace cv;
 using namespace std;
 
-void draw_maze_lines (Mat &canvas, mazepublic_t &maze, double scale, Scalar color)
+// Measured in grid cells
+#define maze_side 8
+
+void draw_maze_lines (Mat &canvas, mazepublic_t &maze, Scalar color)
 {
+    double scale = canvas.size ().height/(maze_side+2)/2;
     for (int linenum = 0; linenum < maze.numlines; linenum++)
     {
-        Point2f start (maze.lines[linenum][0][0]+1, maze.lines[linenum][0][1]+1);
-        Point2f end (maze.lines[linenum][1][0]+1, maze.lines[linenum][1][1]+1);
+        Point2f start (maze.lines[linenum][0][0]+2, maze.lines[linenum][0][1]+2);
+        Point2f end (maze.lines[linenum][1][0]+2, maze.lines[linenum][1][1]+2);
         line (canvas, scale*start, scale*end, color, 2, CV_AA);
     }
 }
 
-void render_with_maze (char *window_id, Mat &src, mazepublic_t &maze, mazepublic_t &trace, bool victory)
-{
-    Mat with_maze;
-    src.copyTo (with_maze);
-    
-    draw_maze_lines (with_maze, maze, 50, Scalar (0,255,0));
-    draw_maze_lines (with_maze, trace, 50, Scalar (0,0,255));
-
-    if (victory)
-        putText (with_maze, "MAZE SOLVED (any key to play again)", Point (60, 60), 0, 2.0, Scalar (0,255,255), 3, CV_AA);
-    
-    imshow (window_id, with_maze);
-    
-    if (victory)
-        waitKey (0);
-}
+Mat processing_visualization_area;
 
 int main (int argc, char *argv[])
 {
@@ -42,7 +31,14 @@ int main (int argc, char *argv[])
         return 0;
     
     char* source_window = "Source";
-    namedWindow (source_window, CV_WINDOW_AUTOSIZE);
+    namedWindow (source_window, CV_WINDOW_NORMAL);
+    Mat display (Size (base_w/2+base_h, base_h), CV_8UC3);
+    resizeWindow (source_window, base_w/2+base_h, base_h);
+
+    Mat camera_display_area = display (Rect (0, 0, base_w/2, base_h/2));
+    processing_visualization_area = display (Rect (0, base_h/2, base_w/2, base_h/2));
+    Mat maze_display_area = display (Rect (base_w/2, 0, base_h, base_h));
+    
     Mat process_in;
     process_done = true;
     thread worker;
@@ -56,13 +52,14 @@ int main (int argc, char *argv[])
     {
         i++;
         Mat src = camera_getframe ();
+        resize (src, camera_display_area, camera_display_area.size ());
 
         // Convert image to gray and blur it
         Mat src_gray;
         cvtColor (src, src_gray, CV_BGR2GRAY);
         
         // Preview camera output
-        render_with_maze (source_window, src, maze, trace, false);
+        imshow (source_window, display);
         
 #define WORKER_THREAD
 #ifdef WORKER_THREAD
@@ -70,9 +67,15 @@ int main (int argc, char *argv[])
         {
             if (worker.joinable ())
                 worker.join ();
-            if (maze_trace (process_output.size(), &process_output[0], &trace)) 
+            maze_display_area.setTo (Scalar (0, 0, 0));
+            bool victory = maze_trace (process_output.size(), &process_output[0], &trace);
+            draw_maze_lines (maze_display_area, maze, Scalar (0, 255, 0));
+            draw_maze_lines (maze_display_area, trace, Scalar (0, 0, 255));
+            if (victory)
             {
-                render_with_maze (source_window, src, maze, trace, true);
+                putText (maze_display_area, "MAZE SOLVED (any key to play again)", Point (60, 60), 0, 2.0, Scalar (0,255,255), 3, CV_AA);
+                imshow (source_window, display);
+                waitKey (0);
                 // Flush a couple of frames that the webcam might have buffered
                 for (int j = 0; j < 5; j++)
                     camera_getframe ();

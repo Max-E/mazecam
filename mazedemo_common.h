@@ -8,6 +8,7 @@ const int base_area = base_w*base_h;
 // For communicating with the image-processing worker thread
 void do_process (cv::Mat process_in); // worker thread main function
 extern bool process_done; // worker thread sets this when it's done with a frame
+extern cv::Mat processing_visualization_area;
 
 extern "C" {
 #endif

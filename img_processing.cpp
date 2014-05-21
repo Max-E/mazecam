@@ -13,7 +13,7 @@ using namespace std;
 bool process_done; 
 arrowvec_t process_output; 
 
-const double arrow_scale = 15;
+const double arrow_scale = 8;
 
 // Sort arrows right to left, top to bottom.
 static bool compare_arrow (arrow_t a, arrow_t b)
@@ -130,8 +130,16 @@ void do_process (Mat process_in)
     // Organize arrows into rows and columns
     sort (process_output.begin (), process_output.end (), compare_arrow);
     
+    // Rescale contours down to fit drawing area
+    for (auto i = contours.begin (); i != contours.end (); i++)
+    {
+        for (auto j = i->begin (); j != i->end (); j++)
+            *j *= 0.5;
+    }
+    
     // Draw a visualization of what the image processing algorithm sees
-    Mat drawing = Mat::zeros (process_in.size(), CV_8UC3);
+    Mat drawing = processing_visualization_area;
+    drawing.setTo (Scalar (0, 0, 0));
     Point2f cursor (arrow_scale, arrow_scale);
     int n = 0;
     for (auto i = process_output.begin (); i != process_output.end (); i++, n++)
@@ -142,6 +150,7 @@ void do_process (Mat process_in)
         else
             axis.x = ortho_axis.y = i->dir == arrow_right ? 1 : -1;
         Point2f org (i->origin[0], i->origin[1]);
+        org *= 0.5;
         
         Scalar color = Scalar (fabs(axis.x)*255, (axis.x+axis.y)*255, fabs(axis.y)*255);
         
@@ -170,8 +179,5 @@ void do_process (Mat process_in)
         }
     }
 
-    /// Show in a window
-    namedWindow( "Contours", CV_WINDOW_AUTOSIZE );
-    imshow( "Contours", drawing );
     process_done = true;
 }
