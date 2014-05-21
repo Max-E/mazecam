@@ -13,7 +13,7 @@ using namespace std;
 bool process_done; 
 arrowvec_t process_output; 
 
-const double arrow_scale = 8;
+const double arrow_scale = 10*scale_len;
 
 // Sort arrows right to left, top to bottom.
 static bool compare_arrow (arrow_t a, arrow_t b)
@@ -66,7 +66,7 @@ void do_process (Mat process_in)
         
         // Filter out the contours in the wrong size range
         double area = contourArea (tmp_contour);
-        if (area < 800 || area > 25600)
+        if (area < 800*scale_area || area > 25600*scale_area)
             continue;
         
         // The contour detection algorithm generates contours around dark 

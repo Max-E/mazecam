@@ -1,9 +1,20 @@
 #ifdef __cplusplus
 
 // Webcam defaults & scaling information
+
+// This is the resolution at which all the magic numbers were calibrated
 const int base_w = 1280;
 const int base_h = 960;
 const int base_area = base_w*base_h;
+
+// This is the resolution at which the camera is configured
+const int cfg_w = 1280;
+const int cfg_h = 720;
+const int cfg_area = cfg_w*cfg_h;
+
+// Magic number scaling factors
+const double scale_len = (double)cfg_h/(double)base_h;
+const double scale_area = (double)cfg_area/(double)base_area;
 
 // For communicating with the image-processing worker thread
 void do_process (cv::Mat process_in); // worker thread main function

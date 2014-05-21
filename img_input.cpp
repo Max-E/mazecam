@@ -22,8 +22,8 @@ bool camera_setup (void)
         return false;
     }
     
-    cvSetCaptureProperty (capture, CV_CAP_PROP_FRAME_WIDTH, base_w);
-    cvSetCaptureProperty (capture, CV_CAP_PROP_FRAME_HEIGHT, base_h);
+    cvSetCaptureProperty (capture, CV_CAP_PROP_FRAME_WIDTH, cfg_w);
+    cvSetCaptureProperty (capture, CV_CAP_PROP_FRAME_HEIGHT, cfg_h);
     
     return true;
 }

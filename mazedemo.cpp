@@ -32,12 +32,12 @@ int main (int argc, char *argv[])
     
     char* source_window = "Source";
     namedWindow (source_window, CV_WINDOW_NORMAL);
-    Mat display (Size (base_w/2+base_h, base_h), CV_8UC3);
-    resizeWindow (source_window, base_w/2+base_h, base_h);
+    Mat display (Size (cfg_w/2+cfg_h, cfg_h), CV_8UC3);
+    resizeWindow (source_window, cfg_w/2+cfg_h, cfg_h);
 
-    Mat camera_display_area = display (Rect (0, 0, base_w/2, base_h/2));
-    processing_visualization_area = display (Rect (0, base_h/2, base_w/2, base_h/2));
-    Mat maze_display_area = display (Rect (base_w/2, 0, base_h, base_h));
+    Mat camera_display_area = display (Rect (0, 0, cfg_w/2, cfg_h/2));
+    processing_visualization_area = display (Rect (0, cfg_h/2, cfg_w/2, cfg_h/2));
+    Mat maze_display_area = display (Rect (cfg_w/2, 0, cfg_h, cfg_h));
     
     Mat process_in;
     process_done = true;
