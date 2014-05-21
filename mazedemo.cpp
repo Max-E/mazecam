@@ -73,7 +73,7 @@ int main (int argc, char *argv[])
             draw_maze_lines (maze_display_area, trace, Scalar (0, 0, 255));
             if (victory)
             {
-                putText (maze_display_area, "MAZE SOLVED (any key to play again)", Point (60, 60), 0, 2.0, Scalar (0,255,255), 3, CV_AA);
+                putText (display, "MAZE SOLVED (any key to play again)", Point (60, 60), 0, 2.0, Scalar (0,255,255), 3, CV_AA);
                 imshow (source_window, display);
                 waitKey (0);
                 // Flush a couple of frames that the webcam might have buffered
