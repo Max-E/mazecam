@@ -60,7 +60,6 @@ int main (int argc, char *argv[])
         // Convert image to gray and blur it
         Mat src_gray;
         cvtColor (src, src_gray, CV_BGR2GRAY);
-        blur (src_gray, src_gray, Size(6,6));
         
         // Preview camera output
         render_with_maze (source_window, src, maze, trace, false);

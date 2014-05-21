@@ -13,62 +13,6 @@ using namespace std;
 bool process_done; 
 arrowvec_t process_output; 
 
-static void WmorphologyEx (Mat src, Mat dst, int op, InputArray kernel)
-{
-    morphologyEx (src, dst, op, kernel);
-}
-
-// Parallel morphologyEx function
-static void PmorphologyEx (Mat& src, Mat& dst, int op, InputArray kernel)
-{
-#define THREADS 2
-    
-    if (THREADS == 1)
-        return morphologyEx (src, dst, op, kernel);
-    
-    int size = src.size().height/THREADS;
-    int margin_bottom, margin_top;
-    Mat out_section_margin[THREADS];
-    thread threads[THREADS];
-    
-    margin_bottom = margin_top = kernel.size().height / 2;
-    
-    dst = Mat (src.size(), src.type());
-    
-    for (int i = 0; i < THREADS; i++)
-    {
-        int start = i*size, end = (i+1)*size;
-        if (i)
-            start -= margin_top;
-        if (i+1 < THREADS)
-            end += margin_bottom;
-        Mat src_section_margin = src (Range(start, end), Range::all());
-        out_section_margin[i] = Mat (src_section_margin.size(), src_section_margin.type());
-        if (i < THREADS-1)
-            threads[i] = thread (WmorphologyEx, src_section_margin, out_section_margin[i], op, kernel);
-        else
-            WmorphologyEx (src_section_margin, out_section_margin[i], op, kernel);
-    }
-    
-    for (int i = 0; i < THREADS; i++)
-    {
-        int keep_start = 0;
-        if (i)
-            keep_start = margin_top;
-        if (i < THREADS-1)
-            threads[i].join ();
-        Mat out_src = out_section_margin[i] (Range(keep_start, keep_start + size), Range::all());
-        Mat out_dst = dst (Range (i*size, (i+1)*size), Range::all());
-        out_src.copyTo (out_dst);
-    }
-    
-#ifdef VERIFY
-    Mat dst2 = Mat (src.size(), src.type());
-    morphologyEx (src, dst2, op, kernel);
-    cout << equal(dst.begin<uchar>(), dst.end<uchar>(), dst2.begin<uchar>()) << endl;
-#endif
-}
-
 const double arrow_scale = 15;
 
 // Sort arrows right to left, top to bottom.
@@ -97,35 +41,48 @@ static void draw_arrow (Mat &canvas, Scalar color, Point2f &org, Point2f &axis, 
     line (canvas, arrow_right, arrow_left, color, 2, CV_AA);
 }
 
+RNG rng(12345);
+
 /** @function do_process */
 void do_process (Mat process_in)
 {
-    Mat writing_emphasized;
     vector<vector<Point> > contours_unfiltered, contours;
     vector<Vec4i> hierarchy;
 
-    // Find the writing in the image. TODO: more efficient method.
+    // Use the Canny edge-detect filter, then dilate the image to merge the 
+    // detected edges a bit.
+    Mat canny_out;
+    Canny (process_in, canny_out, 30, 60, 3);
     #define GETELEMENT(sz) getStructuringElement(2, Size( 2*sz + 1, 2*sz+1 ), Point( sz, sz ) )
-    Mat dst, downsized;
-    resize (process_in, downsized, Size (base_w/2, base_h/2));
-    PmorphologyEx (process_in, dst, MORPH_BLACKHAT, GETELEMENT(15));
-    threshold (dst, dst, 5, 0, 3);
-    equalizeHist (dst, dst);
-    threshold (dst, dst, 16, 255, 0);
-    resize (dst, writing_emphasized, Size (base_w, base_h));
+    dilate (canny_out, canny_out, GETELEMENT(3));
     
-    /// Find contours
-    findContours (writing_emphasized, contours_unfiltered, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point (0, 0));
+    // Find contours and isolate the ones we're interested in
+    findContours (canny_out, contours_unfiltered, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
     for (auto i = contours_unfiltered.begin (); i != contours_unfiltered.end (); i++)
     {
+        // Simplify the contour for efficiency
         vector<Point> tmp_contour;
         approxPolyDP (*i, tmp_contour, 2, true);
+        
+        // Filter out the contours in the wrong size range
         double area = contourArea (tmp_contour);
-         if (area > 150 && area < 25600)
-            contours.push_back (tmp_contour);
+        if (area < 800 || area > 25600)
+            continue;
+        
+        // The contour detection algorithm generates contours around dark 
+        // patches, but also around light patches (i.e. spots of specular
+        // lighting or glare.) We're interested in the contours that enclose 
+        // darker regions, so filter by the average pixel intensity of the
+        // contour's bounding box. Method from
+        // http://stackoverflow.com/questions/17936510
+        Rect roi = boundingRect (tmp_contour);
+        if (mean (process_in (roi)).val[0] > 180)
+            continue;
+        
+        contours.push_back (tmp_contour);
     }
 
-    // Isolate all the arrows
+    // Assign an arrow origin and direction to each contour
     process_output.clear ();
     for (int i = 0; i < contours.size (); i++)
     {
@@ -174,7 +131,7 @@ void do_process (Mat process_in)
     sort (process_output.begin (), process_output.end (), compare_arrow);
     
     // Draw a visualization of what the image processing algorithm sees
-    Mat drawing = Mat::zeros( writing_emphasized.size(), CV_8UC3 );
+    Mat drawing = Mat::zeros (process_in.size(), CV_8UC3);
     Point2f cursor (arrow_scale, arrow_scale);
     int n = 0;
     for (auto i = process_output.begin (); i != process_output.end (); i++, n++)
