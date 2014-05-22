@@ -61,8 +61,8 @@ static inline void set_bitmask (byte *mask, int entry)
 
 static byte *make_bitmask (int size)
 {
-    byte *ret = malloc (size>>3);
-    memset (ret, 0, size>>3);
+    byte *ret = malloc ((size>>3) + 1);
+    memset (ret, 0, (size>>3) + 1);
     return ret;
 }
 
