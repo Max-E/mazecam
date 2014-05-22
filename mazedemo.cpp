@@ -34,7 +34,7 @@ using namespace cv;
 using namespace std;
 
 // Measured in grid cells
-#define maze_side 8
+int maze_side;
 
 void draw_maze_lines (Mat &canvas, mazepublic_t &maze, Scalar color)
 {
@@ -49,15 +49,27 @@ void draw_maze_lines (Mat &canvas, mazepublic_t &maze, Scalar color)
 
 Mat processing_visualization_area;
 
+void regenerate_maze (mazepublic_t *maze, mazepublic_t *trace)
+{
+    cleanup_maze ();
+    generate_maze (maze_side, maze_side, maze);
+    memset (trace, 0, sizeof(*trace));
+}
+
 int main (int argc, char *argv[])
 {
     if (!camera_setup ())
         return 0;
     
-    char* source_window = "Source";
+    char *source_window = "Source";
+    char *maze_trackbar = "Maze Size";
     namedWindow (source_window, CV_WINDOW_NORMAL);
-    Mat display (Size (cfg_w/2+cfg_h, cfg_h), CV_8UC3);
     resizeWindow (source_window, cfg_w/2+cfg_h, cfg_h);
+    maze_side = 6;
+    createTrackbar (maze_trackbar, source_window, &maze_side, 10);
+    int last_maze_side = maze_side;
+    
+    Mat display (Size (cfg_w/2+cfg_h, cfg_h), CV_8UC3);
 
     Mat camera_display_area = display (Rect (0, 0, cfg_w/2, cfg_h/2));
     processing_visualization_area = display (Rect (0, cfg_h/2, cfg_w/2, cfg_h/2));
@@ -68,8 +80,7 @@ int main (int argc, char *argv[])
     thread worker;
     
     mazepublic_t maze, trace;
-    generate_maze (8, 8, &maze);
-    memset (&trace, 0, sizeof(trace));
+    regenerate_maze (&maze, &trace);
     
     int i = 0;
     while (true)
@@ -84,6 +95,18 @@ int main (int argc, char *argv[])
         
         // Preview camera output
         imshow (source_window, display);
+        
+        // regenerate maze if the user adjusted the maze size setting
+        if (maze_side < 3) // because the trackbars always start at 0
+        {
+            maze_side = 3;
+            setTrackbarPos (maze_trackbar, source_window, maze_side);
+        }
+        if (maze_side != last_maze_side)
+        {
+            regenerate_maze (&maze, &trace);
+            last_maze_side = maze_side;
+        }
         
 #define WORKER_THREAD
 #ifdef WORKER_THREAD
@@ -103,9 +126,7 @@ int main (int argc, char *argv[])
                 // Flush a couple of frames that the webcam might have buffered
                 for (int j = 0; j < 5; j++)
                     camera_getframe ();
-                cleanup_maze ();
-                generate_maze (maze_side, maze_side, &maze);
-                memset (&trace, 0, sizeof(trace));
+                regenerate_maze (&maze, &trace);
             }
             process_done = false;
             src_gray.copyTo (process_in);
