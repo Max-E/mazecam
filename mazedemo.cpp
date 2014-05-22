@@ -38,16 +38,24 @@ int maze_side;
 
 void draw_maze_lines (Mat &canvas, mazepublic_t &maze, Scalar color)
 {
-    double scale = canvas.size ().height/(maze_side+2)/2;
+    double scale = canvas.size ().height/(maze_side+2)/4;
     for (int linenum = 0; linenum < maze.numlines; linenum++)
     {
-        Point2f start (maze.lines[linenum][0][0]+2, maze.lines[linenum][0][1]+2);
-        Point2f end (maze.lines[linenum][1][0]+2, maze.lines[linenum][1][1]+2);
+        Point2f start (maze.lines[linenum][0][0]+4, maze.lines[linenum][0][1]+4);
+        Point2f end (maze.lines[linenum][1][0]+4, maze.lines[linenum][1][1]+4);
         line (canvas, scale*start, scale*end, color, 2, CV_AA);
     }
 }
 
-Mat processing_visualization_area;
+void redraw_maze (Mat &canvas, mazepublic_t &maze, mazepublic_t &trace)
+{
+    double scale = (double)canvas.size ().height/(double)(maze_side+2);
+    canvas.setTo (Scalar (0, 0, 0));
+    putText (canvas, "START", Point (scale, 0.5*scale), 0, scale/90.0, Scalar (0, 0, 255));
+    draw_maze_lines (canvas, maze, Scalar (0, 255, 0));
+    draw_maze_lines (canvas, trace, Scalar (0, 0, 255));
+    putText (canvas, "END", Point (maze_side*scale, (maze_side+1.5)*scale), 0, scale/90.0, Scalar (0, 255, 0));
+}
 
 void regenerate_maze (mazepublic_t *maze, mazepublic_t *trace)
 {
@@ -55,6 +63,8 @@ void regenerate_maze (mazepublic_t *maze, mazepublic_t *trace)
     generate_maze (maze_side, maze_side, maze);
     memset (trace, 0, sizeof(*trace));
 }
+
+Mat processing_visualization_area;
 
 int main (int argc, char *argv[])
 {
@@ -105,6 +115,7 @@ int main (int argc, char *argv[])
         if (maze_side != last_maze_side)
         {
             regenerate_maze (&maze, &trace);
+            redraw_maze (maze_display_area, maze, trace);
             last_maze_side = maze_side;
         }
         
@@ -114,10 +125,8 @@ int main (int argc, char *argv[])
         {
             if (worker.joinable ())
                 worker.join ();
-            maze_display_area.setTo (Scalar (0, 0, 0));
             bool victory = maze_trace (process_output.size(), &process_output[0], &trace);
-            draw_maze_lines (maze_display_area, maze, Scalar (0, 255, 0));
-            draw_maze_lines (maze_display_area, trace, Scalar (0, 0, 255));
+            redraw_maze (maze_display_area, maze, trace);
             if (victory)
             {
                 putText (display, "MAZE SOLVED (any key to play again)", Point (60, 60), 0, 2.0, Scalar (0,255,255), 3, CV_AA);

@@ -163,7 +163,7 @@ static void generate_maze_lines (const maze_t *maze, mazepublic_t *out)
 {
     int row, col, cell;
     
-    size_t lines_size = sizeof(*out->lines) * (maze->width + 1) * (maze->height + 1) + 4;
+    size_t lines_size = sizeof(*out->lines) * ((maze->width + 1) * (maze->height + 1) + 8);
     out->lines = malloc (lines_size);
     memset (out->lines, 0, lines_size);
 
@@ -187,20 +187,26 @@ static void generate_maze_lines (const maze_t *maze, mazepublic_t *out)
         out->numlines++; \
     }
     
-    ADD_HORIZLINE (0, 2, 2*maze->width);
-    ADD_VERTLINE (0, 0, 2*maze->width);
-    ADD_HORIZLINE (2*maze->height, 0, 2*maze->width - 2);
+    ADD_HORIZLINE (0, 4, 4*maze->width); // upper border
+    ADD_VERTLINE (0, 0, 4*maze->height); // left border
+    ADD_HORIZLINE (4*maze->height, 0, 4*maze->width - 4); //lower border
     
     for (row = 0, cell = 0; row < maze->height; row++)
     {
         for (col = 0; col < maze->width; col++, cell++)
         {
             if (!get_bitmask (maze->mark_passages, 2*cell+1) && row < maze->height - 1)
-                ADD_HORIZLINE (2*row + 2, 2*col, 2*col + 2);
+                ADD_HORIZLINE (4*row + 4, 4*col, 4*col + 4);
             if (!get_bitmask (maze->mark_passages, 2*cell))
-                ADD_VERTLINE (2*col + 2, 2*row, 2*row + 2);
+                ADD_VERTLINE (4*col + 4, 4*row, 4*row + 4);
         }
     }
+    
+    // Draw a small square indicating the goal point
+    ADD_HORIZLINE (4*maze->height - 3, 4*maze->width - 3, 4*maze->width - 1);
+    ADD_HORIZLINE (4*maze->height - 1, 4*maze->width - 3, 4*maze->width - 1);
+    ADD_VERTLINE (4*maze->width - 3, 4*maze->height - 3, 4*maze->height - 1);
+    ADD_VERTLINE (4*maze->width - 1, 4*maze->height - 3, 4*maze->height - 1);
 }
 
 static maze_t maze;
@@ -240,7 +246,7 @@ bool maze_trace (int num_arrows, arrow_t *arrows, mazepublic_t *out)
 {
     mazepoint_t lastpoint = {0, 0};
     
-    size_t lines_size = sizeof(*out->lines) * (num_arrows + 1);
+    size_t lines_size = sizeof(*out->lines) * (num_arrows + 5);
     out->lines = malloc (lines_size);
     memset (out->lines, 0, lines_size);
     
@@ -278,13 +284,19 @@ bool maze_trace (int num_arrows, arrow_t *arrows, mazepublic_t *out)
         {
             for (int j = 0; j < 2; j++)
             {
-                outline[0][j] = 2 * lastpoint[j] + 1;
-                outline[1][j] = 2 * nextpoint[j] + 1;
+                outline[0][j] = 4 * lastpoint[j] + 2;
+                outline[1][j] = 4 * nextpoint[j] + 2;
             }
             out->numlines++;
             memcpy (lastpoint, nextpoint, sizeof(lastpoint));
         }
     }
+    
+    // Draw a small square indicating the start point
+    ADD_HORIZLINE (1, 1, 3);
+    ADD_HORIZLINE (3, 1, 3);
+    ADD_VERTLINE (1, 1, 3);
+    ADD_VERTLINE (3, 1, 3);
     
     return lastpoint[0] == maze.width - 1 && lastpoint[1] == maze.height - 1;
 }
