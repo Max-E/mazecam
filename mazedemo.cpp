@@ -125,6 +125,12 @@ int main (int argc, char *argv[])
         {
             if (worker.joinable ())
                 worker.join ();
+#else
+        src_gray.copyTo (process_in);
+        if ((i%2) == 0)
+        {
+            do_process (process_in);
+#endif
             bool victory = maze_trace (process_output.size(), &process_output[0], &trace);
             redraw_maze (maze_display_area, maze, trace);
             if (victory)
@@ -137,18 +143,12 @@ int main (int argc, char *argv[])
                     camera_getframe ();
                 regenerate_maze (&maze, &trace);
             }
+#ifdef WORKER_THREAD
             process_done = false;
             src_gray.copyTo (process_in);
             worker = thread (do_process, process_in);
-        }
-#else
-        src_gray.copyTo (process_in);
-        if ((i%2) == 0)
-        {
-            do_process (process_in);
-            maze_trace (process_output.size(), &process_output[0], &trace);
-        }
 #endif
+        }
         
         waitKey(1);
         //if (i == 100) break;
