@@ -74,7 +74,10 @@ int main (int argc, char *argv[])
     char *source_window = "Source";
     char *maze_trackbar = "Maze Size";
     namedWindow (source_window, CV_WINDOW_NORMAL);
+#if (CV_MAJOR_VERSION > 2) || (CV_MAJOR_VERSION == 2 && CV_MINOR_VERSION >= 4)
+    // older openCV is missing this API
     resizeWindow (source_window, cfg_w/2+cfg_h, cfg_h);
+#endif
     maze_side = 6;
     createTrackbar (maze_trackbar, source_window, &maze_side, 10);
     int last_maze_side = maze_side;
