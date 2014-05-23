@@ -5,7 +5,7 @@ clean:
 	rm -f *.o mazedemo
 .phony: clean
 
-CXXFLAGS := -std=gnu++11 -g -ggdb
+CXXFLAGS := -std=gnu++0x -g -ggdb
 CFLAGS := -std=gnu99 -g -ggdb
 LDLIBS := -lopencv_core -lopencv_imgproc -lopencv_highgui
 
